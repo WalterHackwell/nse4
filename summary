@@ -1,0 +1,317 @@
+
+
+Eerst gaan we leren over Firewall polices.
+
+Al het verkeer dat door de Fortigate gaat moet eerst geassocieerd worden met een firewall policy. Een policy heeft bepaalde instructies. Dat bepaald wat er met het verkeer moet gebeuren.  Hoe het wordt gehandeld en of verkeer mag door gaan of niet.  Als samenvatting het zijn bepaalde regels die aangeven wat is toegestaan en wat er gedaan moet worden met de matchende traffic.
+
+Is de traffic toegestaan? Fortigate baseerd dit op een paar criteria. De Fortigate kijkt naar de Source van de traffic en het destination ip address, en de service, Als de policy het verkeer niet blokt. Dan wordt er gekeken naar de security profiles, of te wel UTM, zoals antivirus, Application control, en web filtering. Als je het hebt gekozen in de policy. Ze blokkeren de traffic als er een security risk is, anders is het verkeer toegestaan.
+
+Wordt network address translation (NAT) gebruikt? Is authentication nodig? Firewall policies beantwoorden ook deze vragen. Als het proces klaar is dan forward fortigate de traffic naar de destination.
+
+Het kijkt van top naar bottom, en als er een match is gevonden dan wordt de traffic geprocessed in de firewall, als het niet wordt gematched dan pakt het de implicit deny.
+
+
+
+
+
+Elke policy matched traffic en voegt security toe, door naar de objects te kijken die je hebt op gegeven.
+Zoals addresses en profiles.
+
+Veel voorkomen policy types zijn:
+
+	• Firewall Policy: Een firewall policy bestaat uit verschillende regels die de traffic flow controleerd door de Fortigate.
+	• Firewall Virtual Wire Pair policy:  Wordt gebruikt om de traffic te controleren tussen interfaces in een virtual wire pair.
+	• Multicast policy: Een multicase policy zorgt ervoor dat multicast policies packets worden gepassed van 1 interface naar een andere interface.
+	• Local in policy: Een local-in policy controlled de traffic naar een Fortigate Interface en kan gebruikt worden om administrative access te blokkeren.
+	• DoS policy: Een Denial-of-service (DOS) policy kijkt naar abnormale patronen in de network traffic dat arriveerd op de FortiGate interface.
+
+Bij default is alleen de firewall policy zichtbaar bij Policy en Object. Andere policies zijn beschikbaar gebaseerd op de interface configuraties en advanced features die zijn enabled bij Feature Visibility. In deze les leer je over Ipv4 firewall policies.
+
+
+
+Als een packet arriveerd, hoe vindt Fortigate een matching policy? Elke policy heeft match criteria, die kan bepalen door de volgende objects:
+
+	• Incoming interface
+	• Outgoing interface
+	• Source: Ip address, user, Internet services
+	• Destination: Ip address of Internet services.
+	• Service: IP protocol en port nummer
+	• Schedule: Specifieke tijd wanneer de policy wordt toegevoegd.
+
+Als het verkeer de firewall policy matched, Dan applied Fortigate de actie die is geconfigureerd in de firewall Policy.
+
+	• Als de Action geset is op Deny, Dan dropped Fortigate de sessie.
+	• Als de Action is gezet op ACCEPT: Fortigate staat dan de session toe en voegt andere configured settings toe voor packet processing zoals user authentication, source NAT, antivirus scanning, web filtering enzovoort.
+
+Wanneer Fortigate traffic ontvangt, dan kijkt het naar de Source IP address, Destination ip address en gevraagde services (protocols en port nummers) Het kijkt ook naar de incoming interface en de outgoing interface dat gebruikt worden.  Gebaseerd op deze informatie.  Identificeerd Fortigate de policy. Als de traffic 1 policy matched, dan applied Fortigate een (Accept/Deny) Dat is ingesteld in de policy.
+
+Als voorbeeld: Om incoming FTP traffic te blokkeren maar niet allen FTP servers, voeg de addresses toe van de FTP server als destination en selecteer FTP als service, Je zou waarschijnlijk geen source specifiek aanmaken. Meestal is dan alles van het internet allowed.  En ze de Action op ACCEPT.
+
+
+
+
+
+Als we willen beginnen met het omschrijven van hoe Fortigate policies vindt voor elke packet, Laten we eerst beginnen met de interfaces.
+
+Packets arriveren in de incoming of ingress interface. Routing bepaald de outgoing interface of egress, interface. In elke policy moet je een source en destination interface aangeven. Zelfs als beide op any staan. Beide interfaces moeten de policy matchen.
+
+Als voorbeeld, als je policies configureerd tussen port3 (LAN) ingress en port 1 (WAN) Egress en een packet arriveerd op port2, dan zal de packet niet de policy matchen.  Hierdoor wordt het dus gedropped.  Dit komt omdat de incoming interface niet werd gematched.
+
+Om het makkelijker te maken, kan je interfaces groupen in logische zones. Je kan bijvoorbeeld port4-7 DMZ maken.  Hiervan maak je dan een DMZ zone. 
+
+Je kan geen references maken in een interface als je gebruik maakt van een ZONE, en als je later een interface toevoegd aan de zone, moet je al de references verwijderen naar die interface ( Zoals firewall policies, firewall addresses enzovoort) Als je interfaces individueel wilt references, zou je meerdere sources en destinations opgeven in plaats van een zone.
+
+
+
+Bij default kan je maar 1 interface selecteren als incoming interface en een single interface als outgoing interface. Dit is ,omdat die optie op disabled staat, maar je kan het aanzetten  bij de Feature Visibility page.
+
+Je kan ook multiple interfaces selecteren via de CLI optie, dan maak het niet uit wat er in de GUI is ingesteld.
+
+Als je de any interface optie kiest, dan kun je niet multiple interfaces selecteren.  Dit komt omdat any betekened dat elke interface is geselecteerd.
+
+
+
+De volgende creteria waar FortiGate naar kijkt is de packet source.
+
+In elke firewall policy, moet je een source address object selecteren, Je zou ook een user kunnen selecteren or een user group. Voor verbeterde security. Je kan ook een ISDB selecteren als object als source hier leer je later over in deze les.
+
+Wanneer je een FQDN selecteerd, als source address, dan moet het eerst resolved worden door DNS en gecached in Fortigate. Zorg ervoor dat DNS goed is geconfigureerd in fortigate. Als dit niet lukt dan krijg je een warning message, en dan werkt de policy misschien niet meer goed.
+
+
+
+Als een user is toegevoegd als source, Dan moet Fortigate eerst de user verifyen voor dat access wordt allowed of denied van de firewall Policy. Er zijn verschillende manieren om een user te laten authenticate.
+
+Voor locale users, de username en password is geconfigureerd op Fortigate. De credentials moeten dan matchen zie ze invoeren die geconfigureerd zijn op Fortigate.
+
+Voor een remote user ( Zoals LDAP users of Radius users) ForiGate ontvangr de username en password van de remote user en geeft de informatie door aan de Authentication server, die veritifeerd of het klopt en update fortigate. Daarna geeft Fortigate access gebaseerd op de Firewall policy.
+
+
+
+In de voorbeelden die je kunt zien in de slide, source selectors bepalen de specifieke subnet en user group.
+
+Onthoudt, de user is een optionele object. Het wordt hier gebruik om de policy specifieker te maken.  Als je een policy wilt dat meer traffic toestaat, dan raak je de user object niet aan.
+
+Je kan ook ISDB's gebruiken Internet service Objects, als source in de firewall policy.  Er is een relatie met de internet service objects en firewall policies, je kan 1 van de 2 kiezen maar niet allebei.
+
+
+
+
+Zoals de packet's source, Fortigate kijkt ook naar de destination address voor een match.
+
+Je kan ISDB objects gebruiken als destination in een firewall policy. De address object kan een host name zijn, Ip subnet of range, als je een FQDN opgeeft weet dan zeker dat DNS is geconfigureerd.  Fortigate gebruikt DNS om de FQDNS te resolve. 
+
+Je kan ook geographic addresses gebruiken, dat zijn groepen of ranges van addresses die assigned zijn per land. FortiGuard wordt gebruikt om deze objects te update.
+
+Waarom is er geen user optie? De user identification gebeurd bij de ingress interface, en packets worden alleen geforward naar de egress interface wanneer er successvol is geauthenticeerd.
+
+
+
+Internet Service is een database dat een lijst van Ip addresses, IP protocols en port numbers heeft die gebruikt worden door de meest bekende internet services. Fortigate download de nieuwste versie van de database van Fortiguard. Je selecteerd ze als source of destination in de firewall policy.
+
+Wat gebeurd er als je alleen traffic wilt laten toestaan voor bekende public internet destinations zoals Dropbox of Facebook.
+
+Wanneer je een firewall policy configureerd, dan kan je Internet Service gebruiken als destination in een firewall policy, Hier zitten de Ip addresses in, Ports en protocols die gebruikt worden door die service.  Je kan geen willekeurige address objects mixen met ISDB objects. En je kan geen service selecteren in de firewall policy. Het is hardcoded.
+
+Vergeleken address objects, maar je vaker naar moet kijken of er geen ip address is veranderd of dat porten open moeten. Internet service maken deployment makkelijker en simpeler.
+
+
+
+
+Geographic-based ISDB objects, zorgen ervoor dat gebruikers een country, Region en stad kunnen selecteren.
+Deze objects kunnen gebruikt worden in firewall policies voor specifiekere keuze van de locatie van de parent ISDB>
+
+ISDB objects worden gereferenced in policies bij naam en niet bij ID.
+
+
+
+Je kan ISDB updates disable, zodat ze alleen occuren in change control window, als ISDB updates zijn disabled, andere scheduled FortiGuard updates voor IPS, AV enzovoort, update dan geen ISDB, Bij default zijn er wel ISDB updates.
+
+
+
+Schedules voegen tijd toe als element bij een plict. Als voorbeeld je kan een policy gebruiken zodat backup software wordt toegestaan die geactiveerd wordt in de nacht, of een test window voor remote access voor testing doel einden.
+
+Schedules kunnen geconfigureerd worden als een 24 uur klok, er zijn paar settings die handig zijn om te melden.
+
+	• Recurring:  Als je ALL Day selecteerd, dan wordt traffic toegestaan voor 24 uur voor de dagen die zijn geselecteerd, Wanneer je recurring schedules configureerd. Dan zet je de stop tijd eerder dan de start tijd. De stop tijd geeft de volgende dag aan.  Als je zondag selecteerd 10:00 uur als de start tijd en 09:00 uur als de stop tijd, dan stopt de sechedule op 09:00 uur Als ze gelijk zijn dan is het voor 24 uur.
+	• One time: De start date en time moet eerder zijn dan de stop en time. Je kan ook Pre-expiration event log enable dat een event log N number genereerd voor de hoeveel dagen dat de schedule expired, een N kan voor 1 tot 100 dagen zijn.
+	
+	
+	
+	
+	
+	Waar Fortigate ook naar kijkt zijn packet's service.
+	
+	Bij de IP layer, Protocol numbers ( Zoals TCP, UDP en SCTP enzovoort) Samen met source en destination ports, bepalen de network service. In het algemeen alleen de destination port ( dat is de server's luiste port) wordt defined. Sommige legacy applications maken misschien gebruik van een specifieke source port, Maar bij moderne applicaties wordt dit random geïdentificeerd bij de transmission time, en hierdoor is het niet reliable.
+	
+	Bijvoorbeeld een predefined service object genaamd HTTP is TCP destination port 80, en de predefined service object genaamd HTTPS is TCP destination port 443. Alleen de source port is er maar voor een korte tijd.
+	
+	Bij default zijn services gegrouped samen voor makkelijke administratie bij categorieën. Je kan 1 of meer services of service groups en categorieën aanmaken.
+	
+	
+	Wanneer je een nieuwe firewall policy configureerd in de GUI, dan heeft de policy een unieke naam nodig, omdat het enabled wordt bij default.  Het is optioneel voor de CLI, dit zorgt ervoor dat de policy makkelijk deïdentificeerd wordt.  Je kan de optie enable in de GUI door naar Feature Visibility page te gaan en dan tedrukken op Allow Unnamed Policies. 
+	
+	Als een policy wordt geconfigureerd zonder policy naam op de CLI, en je de Policy daarna configureerd in de GUI, dan moet je een specifieke naam opgeven. Je kan objects selecteren aan de rechter kant van de slide.
+	
+	Je kan Internet Service als Source selecteren, Het is een combinatie van meerdere addresses en meer services geassocieerd met het internet, zoals een update service van software.
+	
+	Er zijn veel opties die je kan configureren in de firewall policy, firewall policy, network opties, security profiles, logging options en enable en disable van policies.
+	
+	Wanneer je firewall object aanmaakt of een policy, een unieke identifier (UUID) wordt toegevoegd aan de logs, dit helpt voor de functionaliteit wanneer het wordt geintregreerd met FortiManager of FortiAnalyzer.
+	
+	Wanneer je een policy aanmaakt, denk dat Fortigate een stateful firewall is, je hebt 1 firewall policy nodig dat de directie matched van de traffic om een sessie aan te maken, FortiGate onthoudt de source-destination pair en antwoordt replies.
+	
+	
+	Een van de belangrijkste features zijn dat firewall policies gebruik maken van Security profiles zoals IPS en antivirus. Een security profile inspecteerd elke packet in de traffic flow, waar de sessie al geaccepteerd is door de firewall.
+	
+	Wanneer verkeer wordt geinspecteerd, Fortigate kan 2 methodes gebruiken: Flow based inspection of proxy based inspection. Verschillende features worden gesupport door elke inspection type.
+	
+	De Video Filter, VOIP, en Web Application Firewall security profile options zijn niet zichtbaar in de policy page in de GUI, je moet ze enable in de Feature Visibility page.
+	
+	
+	
+	Als je logging hebt enabled in de policy Fortigate genereerd traffic logs na dat de policy de IP session afsluit.
+	
+	Bij default, Log allowed Traffic is enabled en staat op de optie Security Events en genereerd logs voor de applied security profiles in de firewall policy. Je kan de optie All session selecteren, dit genereerd logs voor al de sessions.
+	
+	Als je Generate Logs when Sessions start selecteerd, Fortigate maakt dan traffic logs aan wanneer de sessie begint, FortiGate genereerd ook een 2de log voor dezelfde sessie- wanneer het sluit. Meer logging betekend wel slechtere performance dus gebruik het alleen als het handig is.
+	
+	Tijdens de sessie, Als een security profile een violation detecteerd. Fortigate record dan de aanval gelijk. Om het nummer van log messages te beperken, zodat de performance verbeterd. Je kan een session table enable voor dropped traffic, als een sessie wordt denied dan al de packets van de denied sessie worden ook denied, dit zorgt ervoor dat fortigate niet een een policy lookup doet voor al de nieuwe packets, dit bespaard CPU usage en log generation.
+	
+	Deze optie is in de CLI en wordt sess-denied-traffic genoemd. Je kan ook de duration configureren voor de block sessions. Dit betekend hoe lang een session in de table blijft. Door block-session-timer te gebruiken in de CLI dit is bij default 30 seconde.
+	
+	In de GUI option, Generate Logs when Session starts wordt niet displayed, dit betekend dat je Fortigate device geen internal storage heeft. De option op de CLI ook al heb je geen storage heet: set logtraffic-start enable
+	
+	
+	Je kan 2 type of traffic shapers configureren shared en per IP.
+	
+	Een shared shaper maakt gebruik van de total bandwidth naar al de traffic die de shaper gebruiken. De scope kan zijn per policy of voor allen policies die referencen naar die shaper.  Fortigate kan de packet rate zien van de ingress en de egress van de policy traffic.
+	
+	FortiGate staat 3 soorten type Traffic shaping  policies toe.
+	
+	• Shared policy shaping: Bandwith managment van security policies.
+	• Per-Ip shaping: Bandwith management per user Ip address.
+	• Application control shaping: bandwith management per applicatie.
+
+Wanneer je traffic shaping policies aanamkt, dan moet de matching creteria hetzelfde zijn als de firewall polcies waar je shaping op wilt aanzetten. Dit is hetzelfde voor TCP en UDP, UDP recovered minder goed voor packet loss.
+
+
+Standaard, Ipv4 en Ipv6 policies zijn gecombineerd in een policy, in plaats van 2 verschillende plicies voor Ipv4 en ipv6.
+
+Je kan de Incoming interface, Outgoing interface, Schedule en Service fields delen met beide Ipv4 en Ipv6, Voor source addresses, Destination addresses voor Ipv4 en Ipv6.
+
+Wanneer je ze samen voegt, Dan kun je een policy met Ipv4 source address, ipv4 destination address, zonder ipv6 references. Je kan het ook configueren voor ipv6.  Als je ze wilt combineren dan moet je IPv4 en ipv6 beide een source en destination address nodig hebben. Het kan bijvoorbeeld niet alleen een ipv4 source hebben en een ipv6 destination. Je kan de policy table filteren op ipv4 of ipv6 source en destinations.
+
+Bij defaut is ipv6 niet visibile. Je kan het bij de  Feature Visibility page aanzetten.
+
+
+
+Firewall policies verschijnen in een georganiseerde lijst, de lijst is Interface Pair view of By sequence.
+
+Bij default, de policy staat in interface Pair View, Elke section heeft policies in order betreft de matching traffic, gebaseerd op ingress-egress interface pair.  Je kan ook je policies zien als 1 lijst.  Dit is door de optie By Sequence. Op de top van de pagina. Hier wordt ook de volgorde aangegeven van top to  bottom.
+
+Soms kan je view niet gebruiken, als je meerdere source of destination interfaces gebruik of de any interface in een firewall policy. Je kan policies niet seperate in sections bij interface pair view. Ze appearen dan alleen in By Sequence.
+
+Je kan aliassen toevoegen aan de interfaces bij de Network page. Je kan bijvoorbeeld port1: ISP1 noemen.
+
+
+
+Wanneer je policies edit, policy informatie wordt dan zichtbaar.
+
+Deze feature is handig als je als administrator de usage wilt zien, zoals wanneer het laatst gebruikt werd, first used hit counter en actieve sessies.
+
+
+
+Een belangrijke concept om te begrijpen is hoe firewall policies werken  in de volgorde van order, first come first served.
+
+Policy ID's zijn identifiers. Bij default, Policy ID's worden niet displayed in de GUI. Je kan policy ID's toevoegen door de configure table setting icon.
+
+Fortigate automatisch assigned een policy ID wanneer je een nieuwe firewall policy aanmaakt in de GUI. De policy ID veranderd niet, zelfs als je het lager of hoger zet in de sequence.
+
+Als je Policy Advanced Options enabled, dan kan kan je een policy ID manually assignen, als het een duplicate is dan verschijnt er een error.
+
+Policy Advanced options zijn bij default niet ingesteld, je moet het enable in de Feature Visibility page.
+
+
+
+Om Administration makkelijker te maken, kan je services en address objects groupen, Dan kan je group referencen in een firewall policy, in plaats van meerdere objects te selecteren of het aanmaken van meerdere policies.
+
+Deze slide laat zien dat 4 services zijn geconfigureerd de policy: HTTP, HTTPS, FTP en DNS. Dns wordt gebruikt om URLs te resolve naar IP addresses. Omdat mensen domain namen herinneren in plaats van ip addressen.  Als je een policy moet aanmaken voor web en FTP traffic, dan is het logisch om een service object aan te maken genaamd Web-FTP. Hierdoor hoef je niet meerdere services te selecteren. Je kan dan de Web-FTP service group referencen.
+
+
+
+Je hebt verschillende onderwerpen gezien waarbij je ze opnieuw kan gebruiken maar wat als je een object wilt delete?
+
+Als een object gebruikt wordt, dan kan je het niet gelijk delete. Je moet de objects reconfigureren die het gebruiken. De GUI zorgt voor een makkelijke manier waar de objects worden gereferenced. Kijk naar het nummer in de Ref columm. Dat is het aantal plekken waar de object wordt gebruikt. 
+
+In het voorbeeld dat je kunt zien, allen address objects worden gebruikt door Training address group en 3 firewall policies.  Als je een policy selecteerd kun je de Edit, View List en View Properties tabs gebruiken.
+
+	• Edit: Zorgt ervoor dat je het geselecteerde object kan aanpassen,  Je kunt hier de edit page zien van policy 1.
+	• View list:  Zorgt ervoor dat je geslecteerde objects kan zien in deze categorie. Je ziet daar al de firewall policies.
+	• View Policies: Hier zie je waar de objects worden gebruikt,  destination all is gekozen bij deze optie
+	
+	
+	
+	
+Je kan elke firewall policy right clicken om meerdere menu opties te zien of policies aan te passen. Het enable of disable van de policy, een nieuwe firewall policy aanmaken eronder of erboven.  Het clonen van een policy.
+
+Je kunt ook klikken op Edit in CLI het opened dan de CLI console voor de geselecteerde firewall policy of object, het laat de configured settings zien in de CLI en je kunt het aanpassen direct op de CLI console.
+
+
+
+Je kan firewall policies editen in de GUI per columm. Je kan ID's toeveogen en om polcieis op te zoeken. Je kunt ook NAME selecteren om de policy op naam te zoeken.
+
+
+
+Wanneer je namen geconfigureerd voor firewall objects zijn alleen specifieke characters gesupport, bijvoorbeeld Training (LAN) is niet een valide naam voor een address object, omdat het speciale characters heeft die niet zijn toegestaan. Spaties zijn toegestaan, het is best practise om geen spatie te gebruiken, gebruik hyphen bijvoorbeeld of underscore.  Spaties kunnen voor problemen zorgen als je de CLI gebruikt.
+
+Maar veel special characters worden gesupport.
+
+
+
+Plan altijd een maintenance window in, en maak een test case voor een paar ip addresses en users, voordat je de configuratie implementeerd. In een netwerk. Alles wat je in de GUI of CLI doet heeft direct effect.
+
+Als een best practise, probeer de firewall policy zo specifiek mogelijk te maken. Dit restrict access voor de specifieke resource. Bijvoorbeeld maak gebruik van het juiste subnet wanneer je de object configureerd.
+
+Een andere settings die genoemd worden zijn security profiles. Security profiles helpen voor security, Goeie logging configurations kunnen helpen met het analyzeren het diagnose en het oplossen van netwerk issues.
+
+
+
+Herinner wat je hebt geleerd, alleen de 1ste matching policy wordt gebruikt, Je moet de policies goed arrange, het bepaald welke traffic wordt geblokkeerd of toegestaan.  Bij interface pair FortiGate kijkt dan naar het begin bij de top. Dus je moet de meest specifieke policies boven zetten, anders nemen meer algemene policies het over.
+
+In het voorbeeld dan move je Block_FTP policy (ID 2) dat alleen FTP traffic matched, boven de meer algemene Full_Access policy dat alles accepteert. Anders wordt alleen de Full_Access policy gebruikt en wordt de Block_FTP policy nooit gehit.
+
+Wanneer je policies moved, wordt de Policy ID niet veranderd.
+
+Fortigate maakt de hoogste policy ID aan als aan nieuwe policy wordt aangemaakt.
+
+Policy ID's worden bij default niet displayed, je kan de policy ID toevoegen door de Configure Table Icon.
+
+
+
+
+
+In order om het optimaliseren en het sterker maken van firewall policies, moet je altijd naar de firewall policies kijken betreft services, security profiles en logging settings, je kan 2 firewall policies sterker maken, door de services te combineren en de juiste logging settings te kiezen.
+Als je Security Events (UTM) kiest voor logging settings, dan worden traffic logs niet gegenereerd door ALL_ICMP traffic.
+
+ALL_ICMP service is niet een subject voor web filter en antivirus scans, dat betekend dat als je security profiles toevoegd aan ICMP Traffic dat de traffic er door heen gaat zonder dat het geinspecteerd wordt.
+
+
+
+
+Je kan een matching firewall policy vinden gebaseerd op policy lookup criteria. Policy lookup maakt een packet flow aan op een Fortigate zonder echte traffic, Hierdoor kan je Policy ID's vinden door een flow trace en wordt het gehighlight in de policy configuration page.
+
+Gebaseerd op de protocol die je hebt gekozen als voorbeeld TCP, UDP, IP en ICMP enzovoort. Moet je andere criteria selecteren. Bijvoorbeeld als je TCP selecteerd, moet je het source address selecteren, soruce port, destination port en destination address wanneer je ICMP selecteerd, moet je het type ICMP type/code, source address en destination address opgeven.
+
+Wanneer Fortigate een policy lookup performed, dan kijkt het naar ingress stateful inspection en egress, voor de matching firewall policy, van top tot bottom voordat het resultaten laat zien.
+
+Als een firewall policy op disabled staat, dan skipt de policy lookup de policy en kijkt het naar de volgende policy in de lijst.
+
+Wanneer de Fortigate in Transparent mode staat, dan support het geen policy lookup functionm.
+
+
+
+Gebaseerd op de input criteria, als je op Search klikt, dan resulteerd de trace en wordt het gehighlight in de Firewall Policy page.
+
+Waarom worden ID #1 En ID#2 niet gematched in de input criteria?
+
+Omdat policy ID #1 status op disabled staat en de policy lookup skipped de disabled policy, En voor firewall policy ID #2 matched het niet met de destination port die wordt opgegeven in de matching creteria.
